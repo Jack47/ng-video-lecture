@@ -24,7 +24,6 @@ print(data.shape, data.dtype)
 
 # Let's now split up the data into train and validation sets
 n = int(0.9*len(data))
-# import ipdb; ipdb.set_trace()
 train_data = data[:n] # first 90% will be train, rest val
 val_data = data[n:] # last 10% will be val
 
@@ -35,6 +34,7 @@ block_size = 8 # maximum context length
 x = train_data[:block_size]
 y = train_data[1:block_size+1]
 
+# print blocks in one batch
 for t in range(block_size):
     input = x[:t+1]
     target = y[t]
@@ -42,16 +42,25 @@ for t in range(block_size):
 
 batch_size = 4 # how many independent sequences will we process in parallel
 block_size = 8 # maximum context length for predictions?
-
+torch.manual_seed(42)
 def get_batch(split: str = 'train'):
-    torch.stack()
+    data = train_data if split == 'train' else val_data
+    j = torch.randint(len(data)-block_size+1, (batch_size,))
+    xx = [data[k:k+block_size] for k in j]
+    yy = [data[k+1:k+block_size+1] for k in j] # yy 正好是 xx 的整体右移一个窗口大小
+
+    return torch.stack(xx, dim=0), torch.stack(yy, dim=0)
 
 xb, yb = get_batch('train')
 print('inputs:')
 print(xb.shape)
 print(xb)
-print('targets:')
+print('targets')
 print(yb.shape)
-print(yb)
+
+for i in range(batch_size):
+    for j in range(block_size):
+        # import ipdb; ipdb.set_trace()
+        print(f"when inputs is {decode(xb[i, 0:j+1].tolist())}, targets: {decode([yb[i,j].tolist()])}") 
 
 print('----')
