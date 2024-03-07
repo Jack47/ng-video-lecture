@@ -112,3 +112,33 @@ words = m.generate(idx = torch.zeros((1,1), dtype=torch.long), max_new_tokens=10
 print(f"words with 101 length:\n{decode(words[0].tolist())}") # batch 1
 assert len(words[0].tolist()) == 101
 # print(f"1 to char: {decode(torch.tensor([0]).tolist())}lll\nlll")
+
+# create pytorch optimizer
+optimizer = torch.optim.AdamW(m.parameters(), lr=1e-3)
+
+for steps in range(100):
+    xb, yb = get_batch(split='train')
+    logits, loss = m(xb, yb)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    if steps % 20 == 0:
+        print(f"after {steps} steps, loss: {loss}")
+
+print(f"after 100 steps, loss: {loss.item()}")
+
+# toy example illustrating how matrix multiplication can be used for a "weighted attregation"
+torch.manual_seed(42)
+a = torch.tril(torch.ones((3, 3)))
+# how to use softmax, sum dim
+a = a/a.sum(dim=1, keepdim=True) # why not use softmax(a, dim=1)?
+b = torch.randint(0, 3, (3,2)).float()
+import ipdb; ipdb.set_trace()
+c = a@b
+
+print('a=')
+print(a)
+print('b=')
+print(b)
+print('c=')
+print(c)
