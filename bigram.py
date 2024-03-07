@@ -64,3 +64,51 @@ for i in range(batch_size):
         print(f"when inputs is {decode(xb[i, 0:j+1].tolist())}, targets: {decode([yb[i,j].tolist()])}") 
 
 print('----')
+
+
+import torch.nn as nn
+from torch.nn import functional as F
+class BigramLanguageModel(nn.Module):
+
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+
+    def forward(self, idx, targets=None):
+        # idx and targets are both (B,T) tensor of integers
+        # logits is (B,T,V) tensor of log-probabilities for each token in the vocab
+        logits = self.token_embedding_table(idx)
+
+        if targets is None:
+            loss = None
+        else:
+            # cross entropy loss
+            # change logits and targets shape to fit with cross_entropy
+            logits = logits.view(logits.shape[0]*logits.shape[1], logits.shape[2]) # (B,T,V) -> (B*T,V)
+            targets = targets.view(targets.shape[0]*targets.shape[1]) # (B,T) -> (B*T,)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+
+    def generate(self, idx, max_new_tokens):
+        # idx is (B, T) array of indices in the current context
+        for _ in range(max_new_tokens):
+            logits, _ = self.forward(idx) # (B, T, V)
+            # import ipdb; ipdb.set_trace()
+            # focus on the last timestamp
+            logits = logits[:, -1, :] # (B, T, V) -> (B, V)
+            probs = F.softmax(logits, dim=-1)
+            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+
+        return idx
+
+m = BigramLanguageModel(vocab_size=vocab_size)
+logits, loss = m(xb, yb)
+print(logits.shape)
+print(loss)
+
+words = m.generate(idx = torch.zeros((1,1), dtype=torch.long), max_new_tokens=100)
+print(f"words with 101 length:\n{decode(words[0].tolist())}") # batch 1
+assert len(words[0].tolist()) == 101
+# print(f"1 to char: {decode(torch.tensor([0]).tolist())}lll\nlll")
