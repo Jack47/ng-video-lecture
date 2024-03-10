@@ -127,11 +127,11 @@ for steps in range(100):
 
 print(f"after 100 steps, loss: {loss.item()}")
 
-# toy example illustrating how matrix multiplication can be used for a "weighted attregation"
+# toy example illustrating how matrix multiplication can be used for a "weighted aggregation"
 torch.manual_seed(42)
 a = torch.tril(torch.ones((3, 3)))
-# how to use softmax, sum dim
-a = a/a.sum(dim=1, keepdim=True) # why not use softmax(a, dim=1)?
+# 1. how to use softmax, sum dim
+a = a/a.sum(dim=1, keepdim=True) # 2. why not use softmax(a, dim=1)?
 b = torch.randint(0, 3, (3,2)).float()
 import ipdb; ipdb.set_trace()
 c = a@b
