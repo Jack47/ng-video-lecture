@@ -127,13 +127,13 @@ for steps in range(100):
 
 print(f"after 100 steps, loss: {loss.item()}")
 
+## The mathmatical tric in self-attention
 # toy example illustrating how matrix multiplication can be used for a "weighted aggregation"
 torch.manual_seed(42)
 a = torch.tril(torch.ones((3, 3)))
 # 1. how to use softmax, sum dim
 a = a/a.sum(dim=1, keepdim=True) # 2. why not use softmax(a, dim=1)?
 b = torch.randint(0, 3, (3,2)).float()
-import ipdb; ipdb.set_trace()
 c = a@b
 
 print('a=')
@@ -142,3 +142,32 @@ print('b=')
 print(b)
 print('c=')
 print(c)
+
+# consider the following toy examples:
+torch.manual_seed(42)
+B, T, C = 4, 8, 2 # batch, time steps, channels
+x = torch.randn(B, T, C)
+x.shape
+
+# We want x[b,t] = mean_{i<=t} x[b,i]
+xbow = torch.randn(B, T, C)
+xbow1 = torch.Tensor(B, T, C)
+for b in range(B):
+    for t in range(T):
+        xprev = x[b, :t+1] # [1, t, C]
+        xbow1[b, t] = xprev.mean(dim=0)
+
+# Version 2: use matrix matmul for a weighted aggregation
+wei = torch.tril(torch.ones((T, T)))
+wei = wei/wei.sum(dim=1, keepdim=True)
+xbow2 = wei@x # [B, T, T] @ [B, T, C] -> [B, T, C]
+torch.allclose(xbow1, xbow2)
+
+# Version 3: use softmax
+wei = torch.ones((T, T)) # zeros or ones are both ok. 因为下面 softmax 算的是概率
+tril = torch.tril(torch.ones(T,T))
+wei = wei.masked_fill(tril==0, float('-inf')) # '-inf' means 0 in softmax
+wei = wei.softmax(dim=-1)
+
+xbow3 = wei@x # [B, T, T] @ [B, T, C] -> [B, T, C]
+torch.allclose(xbow2, xbow3)
