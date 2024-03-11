@@ -171,3 +171,25 @@ wei = wei.softmax(dim=-1)
 
 xbow3 = wei@x # [B, T, T] @ [B, T, C] -> [B, T, C]
 torch.allclose(xbow2, xbow3)
+
+# Version 4: use self-attention
+torch.manual_seed(42)
+B,T,C = 4,8,32
+x = torch.randn(B,T,C)
+heads = 2
+# Let's see a single Head perform self-attention
+head_size = C//heads
+key = nn.Linear(T, head_size, bias=False)
+value = nn.Linear(T, head_size, bias=False)
+query = nn.Linear(T, head_size, bias=False)
+k = key(x) # (B, T, C) -> (B, T, head_size)
+q = query(x) # (B, T, C) -> (B, T, head_size)
+v = value(x) # (B, T, C) -> (B, T, head_size)
+wei = q@k.transpose(-1, -2) # (B, T, head_size) @ (B, head_size, T) -> (B, T, T)
+wei = wei.mask_fill(torch.tril(torch.ones(T, T)) == 0, float('-inf'))
+wei = wei.softmax(dim=-1)
+
+out = wei@v # (B, T, T) @ (B, T, head_size) -> (B, T, head_size)
+
+
+
