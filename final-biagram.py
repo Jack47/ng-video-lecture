@@ -141,5 +141,10 @@ class BigramLanguageModel(nn.Module):
 
     # 为什么上面训练的时候，forward 里可以一次处理一个 batch，但是下面生成的时候，只能处理一个 token 一次？
     def generate(self, idx, max_new_tokens):
-        pass
-     
+        for _ in range(max_new_tokens):
+            logits, _ = self.forward(idx) # (B, T+1, 1); 训练时拿到 logits 就可以了，推理的时候才需要拿 logits 去生成最符合概率的那个
+            logits = logits[:, -1, :] # (B, 1, V)
+            probs = torch.softmax(logits, dim=-1)# (B,T,V) ->
+            x = torch.multinomial(probs, num_samples=1)
+            idx = torch.cat([idx, x], dim = -2)
+        return idx
